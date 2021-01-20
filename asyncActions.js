@@ -52,7 +52,7 @@ const reducer = (state = initialState, action) => {
         ...state,
         loading: false,
         users: [],
-        error: action.payload,
+        error: action.payload, // if successful the payload is the array of users, if it fails the payload is the error message
       };
     default:
       return state;
