@@ -1,5 +1,8 @@
-const redux = reqire('redux');
+const redux = require('redux');
 const createStore = redux.createStore;
+const applyMiddleware = redux.applyMiddleware;
+const thunkMiddleware = require('redux-thunk').default;
+const axios = require('axios');
 
 const initialState = {
   loading: false,
@@ -27,7 +30,7 @@ const fetchUsersSuccess = users => {
 
 const fetchUsersFailure = error => {
   return {
-    type: FETCH_USERS_REQUEST,
+    type: FETCH_USERS_FAILURE,
     payload: error,
   };
 };
@@ -59,4 +62,31 @@ const reducer = (state = initialState, action) => {
   }
 };
 
-const store = createStore(reducer);
+// the thunkMiddleware enables the ability for an action creator to return a *** FUNCTION *** instead of an action object
+// It also doesn't have to be pure *** so it is allowed to have side effects such as async API calls ***
+// This function can also dispatch actions such as the ones above as it receives the dispatch method as it's argument
+const fetchUsers = () => {
+  return function (dispatch) {
+    dispatch(fetchUsersRequest());
+    axios
+      .get('https://jsonplaceholder.typicode.com/users')
+      .then(response => {
+        //response.data is the array of users
+        const users = response.data.map(user => user.id);
+        dispatch(fetchUsersSuccess(users));
+      })
+      .catch(error => {
+        // error.message (description of the error)
+        // console.log(error.message);
+        // dispatch(fetchUsersFailure(error));
+        dispatch(fetchUsersFailure(error.message));
+      });
+  };
+};
+
+const store = createStore(reducer, applyMiddleware(thunkMiddleware));
+
+store.subscribe(() => {
+  console.log(store.getState());
+});
+store.dispatch(fetchUsers());
